@@ -210,7 +210,7 @@ Every step is also available as plain text, and every card button has a typed eq
 
 The first reply arrives in about 3 seconds. The ranked list takes roughly **20 to 40 seconds** (live checks on about 20 issues plus LLM ranking; a repeated search is faster because GitHub answers are cached for 5 minutes), and progress messages are sent meanwhile. `pick`, the review and `approve` take a few seconds.
 
-**Submission links:** [ASI:One shared chat](https://asi1.ai/chat/0568f642-5da5-4108-86bc-377b7434e928) · Demo video: _add URL_
+**Submission links:** [ASI:One shared chat](https://asi1.ai/chat/0568f642-5da5-4108-86bc-377b7434e928) · [Demo video](https://drive.google.com/file/d/1HMStGF6FJYLrJuEOCbjW59YOYn8XYKGx/view?usp=sharing)
 
 ## Run it yourself
 
