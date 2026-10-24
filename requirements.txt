@@ -1,0 +1,4 @@
+uagents==0.26.1
+python-dotenv>=1.0
+httpx>=0.27
+openai>=1.50
