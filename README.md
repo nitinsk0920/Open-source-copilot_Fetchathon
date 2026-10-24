@@ -14,7 +14,7 @@ Built for the **ASI:One Agent Challenge: From Intent to Action**. Four cooperati
 
 ## Contents
 
-[The problem](#the-problem) · [What it does](#what-it-does) · [A conversation](#a-conversation) · [Architecture](#architecture) · [How verification works](#how-verification-works) · [Safety model](#safety-model) · [Try it in ASI:One](#try-it-in-asione) · [Run it yourself](#run-it-yourself) · [Demo mode and dry runs](#demo-mode-and-dry-runs) · [Testing](#testing) · [Design notes](#design-notes) · [Limitations and roadmap](#limitations-and-roadmap) · [Hackathon checklist](#hackathon-checklist) · [Project layout](#project-layout)
+[The problem](#the-problem) · [What it does](#what-it-does) · [A conversation](#a-conversation) · [Architecture](#architecture) · [How verification works](#how-verification-works) · [Safety model](#safety-model) · [Try it in ASI:One](#try-it-in-asione) · [Run it yourself](#run-it-yourself) · [Demo mode and dry runs](#demo-mode-and-dry-runs) · [Testing](#testing) · [Design notes](#design-notes) · [Future work and current limits](#future-work-and-current-limits) · [Hackathon checklist](#hackathon-checklist) · [Project layout](#project-layout)
 
 ## The problem
 
@@ -291,14 +291,22 @@ The whole workflow has run live through ASI:One against the demo repository: sea
 - **One seam for GitHub identity.** All GitHub access goes through `get_github_token(user_id)` in [`github_auth.py`](src/copilot/tools/github_auth.py).
 - The original project brief is kept in [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) as a design record.
 
-## Limitations and roadmap
+## Future work and current limits
 
-- **One shared GitHub token.** Fine for a hackathon; every user's fork and comment would come from the same account. A real product would use per-user **GitHub OAuth**. Because all access goes through `get_github_token(user_id)`, switching means changing only that function.
-- **Heuristics, not guarantees.** Claim detection is phrase matching and non-English detection is script and stop-word based; both can miss or misfire. Verification is a snapshot, so re-check the issue before you start.
+**Taking it to production**
+
+- **Per-user GitHub OAuth.** In this demo one shared throwaway token performs every fork, comment and pull request. In production each user connects their own GitHub account in the chat, so every action runs as them, under their own name and contribution history, on any public repository, still behind their explicit approval. All GitHub access already goes through one function, `get_github_token(user_id)` ([`github_auth.py`](src/copilot/tools/github_auth.py)), so the change is localised: look up the user's own token there.
+- **Per-user rate limits and abuse controls.** Daily caps on comments and pull requests per user, and a dry run first by default, to protect maintainers. GitHub's 5,000 requests per hour would then apply per user, not to one shared token.
+- **Follow-up monitoring.** Notify the contributor when the maintainer replies to the claim comment or reviews the PR.
+- **Payment Protocol.** A premium tier (deep analysis, mentorship plan), using the Agent Payment Protocol.
+- **Durable state and hosting.** Replace the in-memory-plus-JSON session store with a database, and run the agents as a hosted worker with monitoring ([DEPLOY.md](DEPLOY.md) describes the headless setup).
+
+**Current limits**
+
+- **Heuristics, not guarantees.** Claim detection is phrase matching and non-English detection is script and stop-word based; both can miss or misfire. Verification is a snapshot, so re-check an issue before you start.
 - **Latency.** The ranked list takes roughly 20 to 40 seconds per search (measured 19 to 38 seconds in real ASI:One runs), dominated by the live checks and the LLM ranking.
 - **Agents must be running.** With mailboxes, messages queue while the process is down and are handled when it returns.
 - **Tested on Windows 11** with Python 3.12 and `uagents` 0.26.1.
-- **Not built (roadmap):** follow-up monitoring (notify when the maintainer replies), the Payment Protocol for a premium tier, per-user OAuth, and a persistent database for session state (today: memory plus a JSON file).
 
 ## Hackathon checklist
 
