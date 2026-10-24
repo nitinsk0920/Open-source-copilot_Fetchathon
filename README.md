@@ -189,10 +189,10 @@ Open the Orchestrator's Agentverse profile and click **Chat with Agent**, or sta
 
 | Agent | Address | Agentverse profile |
 |---|---|---|
-| **Orchestrator** `oss-contribution-copilot` (talk to this one) | `agent1q04874jq9r26j0snfv24rzeaawwk002q97g32f3jnyh6rwjzp0mc70c2fhz` | _add URL_ |
-| Discovery `oss-copilot-discovery` | `agent1qtywj6p4vtg68ndzm2cyfq779tjtkx2jgue2hz8ug4fmqzmz4swpzz7kd9j` | _add URL_ |
-| Analyst `oss-copilot-analyst` | `agent1qt8s8vged7qz0u8q7s2ztvlq5dqnnssw4zdxz9njfxuzqs0uxjqpzsch0jf` | _add URL_ |
-| Action `oss-copilot-action` | `agent1qfxfyku3ukgt25qaassxnhwzqrlvz3e2c4elve680766ztuxft4v7mgl9wq` | _add URL_ |
+| **Orchestrator** `oss-contribution-copilot` (talk to this one) | `agent1q04874jq9r26j0snfv24rzeaawwk002q97g32f3jnyh6rwjzp0mc70c2fhz` | [Agentverse profile](https://agentverse.ai/agents/details/agent1q04874jq9r26j0snfv24rzeaawwk002q97g32f3jnyh6rwjzp0mc70c2fhz/profile) |
+| Discovery `oss-copilot-discovery` | `agent1qtywj6p4vtg68ndzm2cyfq779tjtkx2jgue2hz8ug4fmqzmz4swpzz7kd9j` | [Agentverse profile](https://agentverse.ai/agents/details/agent1qtywj6p4vtg68ndzm2cyfq779tjtkx2jgue2hz8ug4fmqzmz4swpzz7kd9j/profile) |
+| Analyst `oss-copilot-analyst` | `agent1qt8s8vged7qz0u8q7s2ztvlq5dqnnssw4zdxz9njfxuzqs0uxjqpzsch0jf` | [Agentverse profile](https://agentverse.ai/agents/details/agent1qt8s8vged7qz0u8q7s2ztvlq5dqnnssw4zdxz9njfxuzqs0uxjqpzsch0jf/profile) |
+| Action `oss-copilot-action` | `agent1qfxfyku3ukgt25qaassxnhwzqrlvz3e2c4elve680766ztuxft4v7mgl9wq` | [Agentverse profile](https://agentverse.ai/agents/details/agent1qfxfyku3ukgt25qaassxnhwzqrlvz3e2c4elve680766ztuxft4v7mgl9wq/profile) |
 
 Every step is also available as plain text, and every card button has a typed equivalent:
 
@@ -208,9 +208,9 @@ Every step is also available as plain text, and every card button has a typed eq
 | `edit pr: <text>` | write your own PR description (`Fixes #N` is added for you) |
 | `help` | the introduction |
 
-A search takes roughly **30 to 50 seconds** (live checks plus LLM ranking); progress messages are sent meanwhile.
+The first reply arrives in about 3 seconds. The ranked list takes roughly **20 to 40 seconds** (live checks on about 20 issues plus LLM ranking; a repeated search is faster because GitHub answers are cached for 5 minutes), and progress messages are sent meanwhile. `pick`, the review and `approve` take a few seconds.
 
-**Submission links:** ASI:One shared chat: _add URL_ · Demo video: _add URL_
+**Submission links:** [ASI:One shared chat](https://asi1.ai/chat/0568f642-5da5-4108-86bc-377b7434e928) · Demo video: _add URL_
 
 ## Run it yourself
 
@@ -280,11 +280,11 @@ python scripts/local_e2e.py --running        # one read-only search through your
 
 `local_e2e.py` uses throwaway seeds and different ports, so it never touches your real agents or their registrations. The unit tests mock HTTP and the LLM and cover the retry and rate-limit layer, the GitHub client, every verification check, ranking validation, language detection, command parsing (approvals only match whole messages), the Action agent's safety rules and idempotency, the card payloads, and the plan writer.
 
-The fork, comment and branch path has run live through ASI:One against the demo repository. The pull-request step is covered by unit tests, a read-only check against live GitHub (branch with and without commits, existing PR, missing branch) and an end-to-end dry run through the real agents.
+The whole workflow has run live through ASI:One against the demo repository: search, verification, ranking, fork, claim comment, branch, and, after the contributor pushed a fix, the pull request itself ([PR #13](https://github.com/nitinsk0920/copilot-demo-calc/pull/13)). The pull-request step is also covered by unit tests, a read-only check against live GitHub (branch with and without commits, existing PR, missing branch) and an end-to-end dry run through the real agents.
 
 ## Design notes
 
-- **Four standalone agents, not a `Bureau`.** A Bureau would run them in one process with in-process messaging (about 1 ms), but the Agentverse Inspector cannot connect a mailbox for Bureau-hosted agents. Standalone agents each get a mailbox and their own profile. The cost is some extra delay per hop, which is small next to the 30 to 50 seconds a search takes (GitHub checks and LLM ranking dominate).
+- **Four standalone agents, not a `Bureau`.** A Bureau would run them in one process with in-process messaging (about 1 ms), but the Agentverse Inspector cannot connect a mailbox for Bureau-hosted agents. Standalone agents each get a mailbox and their own profile. The cost is some extra delay per hop, which is small next to the 20 to 40 seconds a search takes (GitHub checks and LLM ranking dominate).
 - **Cards are an add-on, text is the source of truth.** The text of every step is always sent first; the carousel and the Approve/Reject cards follow. If a card does not render, nothing is lost. ASI:One returns a card click as the selection JSON (plus keys of its own), which the command parser maps to the same commands you could type.
 - **Resilience over cleverness.** All external calls go through one retry layer (timeouts, backoff, rate-limit waits, 5xx and network errors). GitHub searches are spaced by a second and verification runs in batches of four, because GitHub's secondary rate limit punishes bursts. Empty search results are a valid answer, not an error.
 - **LLM output is validated, never trusted.** JSON mode plus a repair retry, hallucinated issue numbers are dropped, scores are clamped, and a heuristic ranking takes over if the model fails.
@@ -295,7 +295,7 @@ The fork, comment and branch path has run live through ASI:One against the demo 
 
 - **One shared GitHub token.** Fine for a hackathon; every user's fork and comment would come from the same account. A real product would use per-user **GitHub OAuth**. Because all access goes through `get_github_token(user_id)`, switching means changing only that function.
 - **Heuristics, not guarantees.** Claim detection is phrase matching and non-English detection is script and stop-word based; both can miss or misfire. Verification is a snapshot, so re-check the issue before you start.
-- **Latency.** Roughly 30 to 50 seconds per search.
+- **Latency.** The ranked list takes roughly 20 to 40 seconds per search (measured 19 to 38 seconds in real ASI:One runs), dominated by the live checks and the LLM ranking.
 - **Agents must be running.** With mailboxes, messages queue while the process is down and are handled when it returns.
 - **Tested on Windows 11** with Python 3.12 and `uagents` 0.26.1.
 - **Not built (roadmap):** follow-up monitoring (notify when the maintainer replies), the Payment Protocol for a premium tier, per-user OAuth, and a persistent database for session state (today: memory plus a JSON file).
