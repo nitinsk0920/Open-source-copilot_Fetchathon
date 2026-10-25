@@ -243,6 +243,8 @@ Values live only in `.env` (git-ignored). Names, as in [`.env.example`](.env.exa
 
 To run it headless on a server (restart on crash, clean shutdown, systemd/Windows/Docker notes) see [DEPLOY.md](DEPLOY.md).
 
+**Live deployment.** The four agents are hosted on [Render](https://render.com) as one web service running `python scripts/run_all.py` (free tier, 512 MB), reachable at `https://open-source-copilot-fetchathon.onrender.com/submit`. Because they only make outbound calls (the Agentverse mailbox), Render would put a free service to sleep, so an uptime monitor requests that URL every 5 minutes to keep it awake. The agent addresses, mailboxes and profiles are the same as when they ran locally, because they come from the seeds. The Render setup is in [DEPLOY.md](DEPLOY.md#render-free-web-service).
+
 ## Demo mode and dry runs
 
 Real writes are controlled by two settings: `DEMO_MODE=true` (the default) and `ALLOWED_TARGET_REPOS=owner/repo[,owner/repo]`.
@@ -299,14 +301,15 @@ The whole workflow has run live through ASI:One against the demo repository: sea
 - **Per-user rate limits and abuse controls.** Daily caps on comments and pull requests per user, and a dry run first by default, to protect maintainers. GitHub's 5,000 requests per hour would then apply per user, not to one shared token.
 - **Follow-up monitoring.** Notify the contributor when the maintainer replies to the claim comment or reviews the PR.
 - **Payment Protocol.** A premium tier (deep analysis, mentorship plan), using the Agent Payment Protocol.
-- **Durable state and hosting.** Replace the in-memory-plus-JSON session store with a database, and run the agents as a hosted worker with monitoring ([DEPLOY.md](DEPLOY.md) describes the headless setup).
+- **Durable state and always-on hosting.** Replace the in-memory-plus-JSON session store with a database (a Render restart currently loses chat history, not the agents), and move from the free tier plus keep-awake monitor to a paid always-on worker with more memory and real alerting ([DEPLOY.md](DEPLOY.md)).
 
 **Current limits**
 
 - **Heuristics, not guarantees.** Claim detection is phrase matching and non-English detection is script and stop-word based; both can miss or misfire. Verification is a snapshot, so re-check an issue before you start.
 - **Latency.** The ranked list takes roughly 20 to 40 seconds per search (measured 19 to 38 seconds in real ASI:One runs), dominated by the live checks and the LLM ranking.
 - **Agents must be running.** With mailboxes, messages queue while the process is down and are handled when it returns.
-- **Tested on Windows 11** with Python 3.12 and `uagents` 0.26.1.
+- **Free hosting trade-offs.** On Render's free tier the four agents share 512 MB and rely on the keep-awake monitor; if that monitor stops, the service sleeps and the agents stop answering until it wakes.
+- **Tested on Windows 11** (development) and **Render** (hosted), with Python 3.12 and `uagents` 0.26.1.
 
 ## Hackathon checklist
 
@@ -323,7 +326,7 @@ The whole workflow has run live through ASI:One against the demo repository: sea
 | Bonus: reliability and recovery | Retries, rate-limit handling, widening search, per-step retry |
 | Bonus: real-time data | Live GitHub state on every search |
 | Bonus: Payment Protocol | Not implemented |
-| Bonus: keeps operating after the hackathon | Headless supervisor with restart and clean shutdown ([DEPLOY.md](DEPLOY.md)); no follow-up monitoring yet |
+| Bonus: keeps operating after the hackathon | Deployed and live on Render, with a headless supervisor that restarts crashed agents ([DEPLOY.md](DEPLOY.md)); no follow-up monitoring yet |
 
 ## Project layout
 

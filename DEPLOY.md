@@ -67,6 +67,34 @@ that restarts on failure.
 install -e .`, and has `CMD ["python", "scripts/run_all.py"]`. Pass the variables with `--env-file .env` (do not bake
 `.env` into the image) and mount a volume at `/app/.state` if you want conversations to survive container restarts.
 
+## Render (free web service)
+
+This is how the submitted demo is hosted. The agents only call out, but Render's free tier needs a web service that answers
+on a port, and it **sleeps a service after about 15 minutes without web visits**, so two extra pieces are needed.
+
+| Setting | Value |
+|---|---|
+| Type | Web Service (a Background Worker is not available on the free plan) |
+| Runtime | Python 3 |
+| Build command | `pip install -r requirements.txt && pip install -e .` |
+| Start command | `python scripts/run_all.py` |
+| Instance type | Free |
+
+Environment variables (set in Render's dashboard, never in the repo):
+`PYTHON_VERSION=3.12.8`, `ORCHESTRATOR_PORT=10000` (Render's default web port, so it sees the service as alive), the four
+`*_SEED_PHRASE` values (identical to the ones used before, so the agent addresses and mailboxes carry over),
+`ASI1_API_KEY`, `GITHUB_TOKEN`, `DEMO_MODE=true`, `ALLOWED_TARGET_REPOS`.
+
+- **Keep it awake.** Add a free uptime monitor (for example UptimeRobot) that requests
+  `https://<your-service>.onrender.com/submit` every 5 minutes; it answers `OK - Agent is running`. The `/` page returns 404 on
+  purpose, so monitor `/submit`.
+- **Cut over without a gap.** Deploy, wait for four `started` lines and no `mailbox not found` in the log, **then** stop any other
+  copy (your PC), then send a test message. Two copies with the same seeds split the messages.
+- **Watch memory.** The four processes share the free instance's 512 MB. If the service is killed and restarts in a loop,
+  move up an instance size or run locally again.
+- **Restarts lose chat history** (the disk is temporary), not the agents.
+- A single `503 upstream connect error` from the Agentverse mailbox in the log is transient; the agent retries by itself.
+
 ## Operating notes
 
 - **Never run two copies with the same seeds.** Mailbox messages would be split between them.
